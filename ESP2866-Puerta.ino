@@ -1,12 +1,14 @@
 
-#include <ESP8266WiFi.h>
-#include <InfluxDb.h>
-
 #define STASSID "ox-demo"
-#define STAPSK  "ox-over-dns"
-#define INFLUXDB_HOST "163.10.10.117"
+#define STAPSK "ox-over-dns"
+
+#define INFLUXDB_HOST "influxdb-c.catedras.linti.unlp.edu.ar"
 #define INFLUXDB_PORT 8086
-#define INFLUXDB_TOKEN "AeF0E-9tOZv9wTjBC-wDbUzBlbRXA4pPYwiXDcTIkrcmXZM1YZPDNcC5CBHLdqvmkZ5yqxHWivsgyVSPdm6m7Q=="
+
+#define INFLUXDB_DATA "guillermocalderaro"
+#define INFLUXDB_USER "guillermocalderaro"
+#define INFLUXDB_PASS "guillermocalderaro_iot"
+
 #define INTDELAY 30
 #define RDELAY 100
 
@@ -76,27 +78,27 @@ bool IntStateExt (){
 }
 
 void setup() {
+  
   Serial.begin(115200);
+  
   WiFi.mode(WIFI_STA);
   WiFi.begin(STASSID, STAPSK);
+  
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print('.');
     delay(500);
   }
+  
   Serial.print("Connected! IP address: ");
   Serial.println(WiFi.localIP());
 
-  influx.setDb("IoT");
-  //influx.setVersion(2);
-  //influx.setOrg("IoT");
-  //influx.setBucket("Ingresos");
-  //influx.setToken(INFLUXDB_TOKEN);
+  influx.setDbAuth(INFLUXDB_DATA, INFLUXDB_USER, INFLUXDB_PASS);
 
-  pinMode(pinExt, INPUT);
-  pinMode(pinInt, INPUT);
+  pinMode(pinExt, INPUT_PULLUP);
+  pinMode(pinInt, INPUT_PULLUP);
 
-  attachInterrupt(digitalPinToInterrupt(pinExt), pinIntInt, RISING);
-  attachInterrupt(digitalPinToInterrupt(pinInt), pinIntExt, RISING);
+  attachInterrupt(digitalPinToInterrupt(pinExt), pinIntExt, RISING);
+  attachInterrupt(digitalPinToInterrupt(pinInt), pinIntInt, RISING);
 
 }
 
@@ -104,17 +106,17 @@ void loop() {
   if (IntStateExt()){
     Serial.println("Exterior");
     if (interior)
-      SendReset(-1);
+    SendReset(-1);
     else exterior = true;
   }
   else if (IntStateInt()){
     Serial.println("Interior");
     if (exterior)
-      SendReset(1);
+    SendReset(1);
     else interior = true;
   }
   else if (interior || exterior)
-    if (++loopCount > RDELAY) SendReset(0);
+  if (++loopCount > RDELAY) SendReset(0);
   if (dtimeInt) --dtimeInt;
   if (dtimeExt) --dtimeExt;
   delay (50);
